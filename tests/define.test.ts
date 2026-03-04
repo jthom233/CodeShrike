@@ -107,27 +107,28 @@ describe("handleDefine", () => {
     expect(data.step_ids).not.toContain("step-a");
   });
 
-  it("rejects steps with invalid layer — DB CHECK constraint throws", () => {
-    // The layer CHECK constraint in SQLite will fire and throw.
-    // handleDefine has no application-level validation — it lets the DB error bubble up.
-    expect(() =>
-      handleDefine(
-        {
-          suite_id: "suite-badlayer",
-          name: "Bad Layer Suite",
-          layers: ["ui"],
-          steps: [
-            {
-              step_id: "step-bad",
-              name: "Bad step",
-              layer: "invalid_layer_xyz", // not in CHECK list
-              expected: "should reject",
-            },
-          ],
-        },
-        projectPath
-      )
-    ).toThrow();
+  it("rejects steps with invalid layer — returns error response", () => {
+    // Application-level validation catches invalid layers before hitting the DB.
+    const result = handleDefine(
+      {
+        suite_id: "suite-badlayer",
+        name: "Bad Layer Suite",
+        layers: ["ui"],
+        steps: [
+          {
+            step_id: "step-bad",
+            name: "Bad step",
+            layer: "invalid_layer_xyz", // not in CHECK list
+            expected: "should reject",
+          },
+        ],
+      },
+      projectPath
+    );
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toMatch(/Invalid layer values/);
+    expect(data.error).toMatch(/step-bad/);
+    expect(data.error).toMatch(/invalid_layer_xyz/);
   });
 
   it("creates a suite with zero steps", () => {

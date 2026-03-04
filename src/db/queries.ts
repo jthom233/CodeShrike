@@ -228,7 +228,7 @@ export function getRunsForSuite(
   const stmt = db.prepare<[string, number], Run>(`
     SELECT * FROM runs
     WHERE suite_id = ?
-    ORDER BY started_at DESC
+    ORDER BY started_at DESC, rowid DESC
     LIMIT ?
   `);
   return stmt.all(suiteId, limit);

@@ -23,6 +23,22 @@ export function handleDefine(
   },
   projectPath: string
 ): { content: [{ type: "text"; text: string }] } {
+  const VALID_LAYERS = new Set(['ui', 'api', 'logic', 'data', 'filesystem', 'auth', 'integration', 'performance']);
+
+  // Validate step layers
+  const invalidSteps = args.steps.filter(s => !VALID_LAYERS.has(s.layer));
+  if (invalidSteps.length > 0) {
+    const details = invalidSteps.map(s => `step "${s.step_id}" has invalid layer "${s.layer}"`).join('; ');
+    return {
+      content: [{
+        type: "text" as const,
+        text: JSON.stringify({
+          error: `Invalid layer values: ${details}. Valid layers: ${[...VALID_LAYERS].join(', ')}`
+        })
+      }]
+    };
+  }
+
   const db = getDatabase(projectPath);
 
   const existing = getSuite(db, args.suite_id);

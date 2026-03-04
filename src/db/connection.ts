@@ -105,3 +105,27 @@ export function getDatabase(projectPath: string): Database.Database {
   dbCache.set(resolvedPath, db);
   return db;
 }
+
+/**
+ * Checkpoint and close all cached database connections.
+ * Called on process exit to ensure WAL files are fully checkpointed so that
+ * any subsequent readonly readers (e.g. the dashboard server) can open the
+ * database without hanging on stale WAL/SHM files.
+ */
+export function closeAllDatabases(): void {
+  for (const db of dbCache.values()) {
+    try {
+      db.pragma("wal_checkpoint(TRUNCATE)");
+      db.close();
+    } catch {
+      // Best-effort — ignore errors during shutdown
+    }
+  }
+  dbCache.clear();
+}
+
+// Register a synchronous exit handler so cleanup runs even on normal exit,
+// SIGINT, or SIGTERM (Node converts signals to 'exit' after handler runs).
+process.on("exit", closeAllDatabases);
+process.on("SIGINT", () => process.exit(0));
+process.on("SIGTERM", () => process.exit(0));

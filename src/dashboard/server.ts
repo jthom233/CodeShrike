@@ -310,7 +310,7 @@ const dashboardDir = path.resolve(__dirname, "../../dashboard");
 app.use(express.static(dashboardDir));
 
 // Fallback: serve index.html for all unmatched routes (SPA client-side routing)
-app.get("*", (_req: Request, res: Response) => {
+app.get("/{*splat}", (_req: Request, res: Response) => {
   res.sendFile(path.join(dashboardDir, "index.html"));
 });
 
