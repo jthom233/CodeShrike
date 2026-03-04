@@ -1,0 +1,22 @@
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --border: #0f3460;
+  --text: #e0e0e0;
+  --text-dim: #808080;
+  --accent: #e94560;
+  --pass: #4ade80;
+  --fail: #f87171;
+  --skip: #fbbf24;
+  --blocked: #a78bfa;
+  --untested: #6b7280;
+  --font: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); }
+header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); }
+h1 { font-size: 1.2rem; color: var(--accent); }
+nav button { background: none; border: 1px solid var(--border); color: var(--text-dim); padding: 0.4rem 1rem; cursor: pointer; font-family: var(--font); font-size: 0.8rem; }
+nav button.active { color: var(--text); border-color: var(--accent); }
+main { padding: 2rem; }

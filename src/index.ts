@@ -5,6 +5,7 @@ import { handleDefine } from "./tools/define.js";
 import { handleQuery } from "./tools/query.js";
 import { handleCompare } from "./tools/compare.js";
 import { handleRecord, startAutoCloseTimer } from "./tools/record.js";
+import { handleDashboard } from "./tools/dashboard.js";
 
 // Parse --project-path argument (default: process.cwd())
 const args = process.argv.slice(2);
@@ -151,10 +152,8 @@ server.tool(
       .default(8420)
       .describe("Port to serve dashboard on"),
   },
-  async (_args) => {
-    return {
-      content: [{ type: "text", text: "Not implemented" }],
-    };
+  async (args) => {
+    return handleDashboard(args, projectPath);
   }
 );
 
