@@ -11,6 +11,7 @@ import {
   getRun,
   getResults,
 } from "../db/queries.js";
+import { getDbPath } from "../db/connection.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -33,10 +34,14 @@ const projectPath = getArg("--project-path") ?? process.cwd();
 // Database (read-only)
 // ---------------------------------------------------------------------------
 
-const dbPath = path.join(projectPath, ".codeshrike", "db.sqlite");
+const dbPath = getDbPath(projectPath);
 const db = new Database(dbPath, { readonly: true });
-// WAL pragma must be applied even for readers to allow concurrent access
-db.pragma("journal_mode = WAL");
+// WAL pragma improves concurrent read access but is not available on all filesystems
+try {
+  db.pragma("journal_mode = WAL");
+} catch {
+  // WAL not available (e.g. network FS), DELETE mode works fine for reads
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
