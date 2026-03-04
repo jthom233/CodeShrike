@@ -1,6 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { handleDefine } from "./tools/define.js";
+import { handleQuery } from "./tools/query.js";
+import { handleCompare } from "./tools/compare.js";
+import { handleRecord, startAutoCloseTimer } from "./tools/record.js";
 
 // Parse --project-path argument (default: process.cwd())
 const args = process.argv.slice(2);
@@ -37,10 +41,8 @@ server.tool(
       )
       .describe("Ordered test steps"),
   },
-  async (_args) => {
-    return {
-      content: [{ type: "text", text: "Not implemented" }],
-    };
+  async (args) => {
+    return handleDefine(args, projectPath);
   }
 );
 
@@ -75,10 +77,8 @@ server.tool(
       .optional()
       .describe("If true, closes the run after recording"),
   },
-  async (_args) => {
-    return {
-      content: [{ type: "text", text: "Not implemented" }],
-    };
+  async (args) => {
+    return handleRecord(args, projectPath);
   }
 );
 
@@ -113,10 +113,8 @@ server.tool(
       .default(1)
       .describe("Maximum number of results"),
   },
-  async (_args) => {
-    return {
-      content: [{ type: "text", text: "Not implemented" }],
-    };
+  async (args) => {
+    return handleQuery(args, projectPath);
   }
 );
 
@@ -135,10 +133,8 @@ server.tool(
       .optional()
       .describe("Second run ID (defaults to most recent)"),
   },
-  async (_args) => {
-    return {
-      content: [{ type: "text", text: "Not implemented" }],
-    };
+  async (args) => {
+    return handleCompare(args, projectPath);
   }
 );
 
@@ -165,6 +161,10 @@ server.tool(
 // Start server
 const transport = new StdioServerTransport();
 await server.connect(transport);
+
+// Start auto-close timer for stale runs
+const autoCloseInterval = startAutoCloseTimer(projectPath);
+process.on('exit', () => clearInterval(autoCloseInterval));
 
 // Export projectPath for use by other modules
 export { projectPath };
