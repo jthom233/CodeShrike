@@ -18,10 +18,12 @@ type StatusFilter =
   | "failing_suites";
 
 interface SummaryObject {
-  pass?: number;
-  fail?: number;
-  skip?: number;
+  passed?: number;
+  failed?: number;
+  skipped?: number;
   blocked?: number;
+  total?: number;
+  untested?: number;
   [key: string]: unknown;
 }
 
@@ -184,7 +186,7 @@ export function handleQuery(
     filteredSuites = suites.filter((s) => {
       if (!s.latest_run) return false;
       const summary = s.latest_run.summary as SummaryObject;
-      return (summary.fail ?? 0) > 0;
+      return (summary.failed ?? 0) > 0;
     });
   }
 
