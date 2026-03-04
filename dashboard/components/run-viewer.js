@@ -98,7 +98,7 @@ function renderStepDetail(step, result, container, runId) {
   const screenshotHtml = shotPath
     ? `<div class="screenshot-wrapper">
          <img class="step-screenshot" id="step-screenshot"
-              src="/screenshots/${escHtml(shotPath)}"
+              src="/${escHtml(shotPath)}"
               alt="Screenshot for step ${escHtml(step.name)}"
               loading="lazy" />
        </div>`
