@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 // The canonical human-readable version lives in schema.sql alongside this file.
 const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
-PRAGMA busy_timeout = 5000;
+PRAGMA busy_timeout = 10000;
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS suites (
@@ -88,19 +88,52 @@ export function getDatabase(projectPath: string): Database.Database {
 
   // Open the database
   const dbPath = path.join(shrineDir, "db.sqlite");
+
+  // Remove any 0-byte db.sqlite left behind by a crashed init, along with its
+  // WAL/SHM companions.  A 0-byte file is not a valid SQLite database and
+  // causes confusing "database is locked" errors on the next startup.
+  try {
+    const stat = fs.statSync(dbPath);
+    if (stat.size === 0) {
+      fs.rmSync(dbPath);
+      for (const suffix of ["-wal", "-shm"]) {
+        const companion = dbPath + suffix;
+        if (fs.existsSync(companion)) fs.rmSync(companion);
+      }
+    }
+  } catch {
+    // statSync throws if the file doesn't exist — that's fine, nothing to clean up
+  }
+
   const db = new Database(dbPath);
 
-  // Apply PRAGMAs individually (better-sqlite3 exec() cannot process PRAGMA
-  // statements that return rows when mixed with DDL in one batch)
-  db.pragma("journal_mode = WAL");
-  db.pragma("busy_timeout = 5000");
-  db.pragma("foreign_keys = ON");
+  try {
+    // Apply PRAGMAs individually (better-sqlite3 exec() cannot process PRAGMA
+    // statements that return rows when mixed with DDL in one batch)
+    db.pragma("journal_mode = WAL");
+    db.pragma("busy_timeout = 10000");
+    db.pragma("foreign_keys = ON");
 
-  // Run DDL — strip the PRAGMA lines since we applied them above
-  const ddl = SCHEMA_SQL.split("\n")
-    .filter((line) => !line.trimStart().startsWith("PRAGMA"))
-    .join("\n");
-  db.exec(ddl);
+    // Run DDL — strip the PRAGMA lines since we applied them above
+    const ddl = SCHEMA_SQL.split("\n")
+      .filter((line) => !line.trimStart().startsWith("PRAGMA"))
+      .join("\n");
+    db.exec(ddl);
+  } catch (err) {
+    db.close();
+    for (const suffix of ["", "-wal", "-shm"]) {
+      const target = dbPath + suffix;
+      try {
+        if (fs.existsSync(target)) fs.rmSync(target);
+      } catch {
+        // Best-effort cleanup
+      }
+    }
+    throw new Error(
+      "Failed to initialize CodeShrike database — removed corrupt file, please retry",
+      { cause: err },
+    );
+  }
 
   dbCache.set(resolvedPath, db);
   return db;
