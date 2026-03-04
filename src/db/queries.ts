@@ -126,6 +126,13 @@ export function replaceSteps(
     expected: string;
   }[]
 ): void {
+  // Delete step_results that reference steps belonging to this suite first,
+  // to avoid a FK constraint violation when steps are replaced on a suite that
+  // already has recorded runs. step_results.step_id has no ON DELETE CASCADE.
+  const deleteResultsStmt = db.prepare<[string]>(`
+    DELETE FROM step_results
+    WHERE step_id IN (SELECT id FROM steps WHERE suite_id = ?)
+  `);
   const deleteStmt = db.prepare<[string]>(
     `DELETE FROM steps WHERE suite_id = ?`
   );
@@ -137,6 +144,7 @@ export function replaceSteps(
   `);
 
   const txn = db.transaction(() => {
+    deleteResultsStmt.run(suiteId);
     deleteStmt.run(suiteId);
     for (const step of steps) {
       insertStmt.run(
